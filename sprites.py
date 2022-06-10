@@ -174,7 +174,6 @@ class VisibleBoard(Board):
         super().__init__(img_size, board_size, topleft, screen_size)
 
 
-
 class Chip(pygame.sprite.Sprite):
     def __init__(self, size, colour, col_row, intended_pos, topleft=(0, 0)):
         self.image = pygame.transform.smoothscale(pygame.image.load("images/red_chip.png"), size).convert_alpha()
