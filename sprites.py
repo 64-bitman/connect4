@@ -8,28 +8,13 @@ class BoardException(Exception):
 
 
 class Board(pygame.sprite.Sprite):
-    def __init__(self, img_size, board_size, topleft, screen_size):
-        self.static_board = pygame.Surface(img_size).convert()  # to be drawn over `self.static_image`
-        self.static_image = self.static_board.copy().convert_alpha()  # blank surface to blit in chips
-
-        self.image = self.static_image.copy()
-        self.rect = self.image.get_rect(topleft=topleft)
-        self.colour = 0, 0, 255
-
-        self.x_grid = None
-        self.y_grid = None
-        self.columns = {}
-
-        self.screen_size = screen_size
+    def __init__(self, board_size):
+        self.chips = {}
         self.board_size = board_size
-        self.cell_gap = 20  # distance between each cell and the border in px
-        self.cell_size = (img_size[0] - self.cell_gap) / board_size[0] - self.cell_gap, \
-                         (img_size[1] - self.cell_gap) / board_size[1] - self.cell_gap
 
         self.game_won = {"won": False, "colour": None, "chips": []}
         self.num_in_a_row = 4
 
-        self.static_image.fill((0, 0, 0, 0))
         self.initiate_board()
         super().__init__()
 
@@ -70,63 +55,13 @@ class Board(pygame.sprite.Sprite):
         return chip_placed
 
     def initiate_board(self):
-        """calculate the cell positions, initiate the chips dict, and draw the board"""
-        x_p = [x * (self.cell_size[0] + self.cell_gap) + self.cell_gap for x in range(0, self.board_size[0])]
-        y_p = [y * (self.cell_size[1] + self.cell_gap) + self.cell_gap for y in range(0, self.board_size[1])]
-        xx, yy = np.meshgrid(x_p, y_p, indexing="ij")
-
-        self.x_grid = xx
-        self.y_grid = yy
-
+        """add column items (sets) to the chips dict"""
         # add column items (sets) to the chips dict
         for column in range(0, self.board_size[0]):
-            column_size = self.cell_size[0] + self.cell_gap, self.rect.bottom
-            column_topleft = (self.cell_size[0] + self.cell_gap) * column + self.cell_gap / 2, 0
+            self.chips[column] = set()
 
-            column_rect = pygame.Rect(*column_topleft, *column_size)
-            # to represent empty cells that will be removed when a chip is added to that pos
-
-            self.columns[column] = {"chips": set(), "rect": column_rect}
-
-        # draw the board
-        self.static_board.fill(self.colour)
-        self.static_board.set_colorkey((0, 0, 0))  # make the cells in the board transparent
-
-        for x in range(0, self.board_size[0]):
-            for y in range(0, self.board_size[1]):
-                cell_template = pygame.Surface((101, 101)).convert()
-                cell_template.fill(self.colour)
-
-                pygame.draw.circle(cell_template, (0, 0, 0), cell_template.get_rect().center, 50)
-                cell_template = pygame.transform.scale(cell_template, self.cell_size)
-
-                self.static_board.blit(cell_template, self.get_cell_pos(x, y))
-
-        self.image = self.static_board.copy()
-
-    def get_cell_pos(self, x, y):
-        if 0 <= x < self.board_size[0] and 0 <= y < self.board_size[1]:
-            return self.x_grid[x, y], self.y_grid[x, y]
-        else:
-            raise BoardException(f"CELL POSITION ({x}, {y}) OUT OF BOUNDS")
-
-    def get_column_height(self, column_num):
-        """return the position on top of the highest chip/bottom in the column"""
-        return self.board_size[1] - len(self.columns[column_num]["chips"]) - 1
-
-    def add_chip_to_set(self, chip, column_num):
-        self.columns[column_num]["chips"].add(chip)
-
-    def place_chip(self, column_num, colour):
-        if len(self.columns[column_num]["chips"]) < self.board_size[1]:  # if column not full
-            chip_board_pos = column_num, self.get_column_height(column_num)
-            chip_position = self.get_cell_pos(*chip_board_pos)
-
-            start_position = pygame.Vector2(self.get_cell_pos(column_num, 0)) + (0, -self.cell_size[1])
-            new_chip = Chip(self.cell_size, colour, chip_board_pos, chip_position, start_position)
-
-            self.add_chip_to_set(new_chip, column_num)
-            self.check_x_consecutive_chips(chip_board_pos, colour, self.num_in_a_row)
+    def add_chip_to_set(self, chip: set, column_num: int):
+        self.chips[column_num].add(chip)
 
     def check_x_consecutive_chips(self, board_pos, colour, count=4):
         """check if the chip makes x in a row"""
@@ -146,8 +81,8 @@ class Board(pygame.sprite.Sprite):
             found = 0
 
             # change all the positions that are occupied to the chip that occupies it
-            for column_num, properties in self.columns.items():
-                for chip in properties["chips"]:
+            for column_num, chips_set in self.chips.items():
+                for chip in chips_set:
                     if chip.colour == colour and chip.board_pos in positions:
                         positions.remove(chip.board_pos)
                         positions.add(chip)
@@ -167,11 +102,6 @@ class Board(pygame.sprite.Sprite):
             if found >= count:
                 self.game_won = {"won": True, "colour": colour, "chips": winning_chips}
                 break
-
-
-class VisibleBoard(Board):
-    def __init__(self, img_size, board_size, topleft, screen_size):
-        super().__init__(img_size, board_size, topleft, screen_size)
 
 
 class Chip(pygame.sprite.Sprite):
@@ -207,6 +137,85 @@ class Chip(pygame.sprite.Sprite):
 
     def __getitem__(self, index):
         return self.board_pos[index]
+
+
+class VisibleBoard(Board):
+    def __init__(self, img_size, board_size, topleft, screen_size):
+        self.static_board = pygame.Surface(img_size).convert()  # to be drawn over `self.static_image`
+        self.static_image = self.static_board.copy().convert_alpha()  # blank surface to blit in chips
+
+        self.image = self.static_image.copy()
+        self.rect = self.image.get_rect(topleft=topleft)
+        self.colour = 0, 0, 255
+
+        self.x_grid = None
+        self.y_grid = None
+        self.column_rects = {}
+
+        self.screen_size = screen_size
+        self.board_size = board_size
+        self.cell_gap = 20  # distance between each cell and the border in px
+        self.cell_size = (img_size[0] - self.cell_gap) / board_size[0] - self.cell_gap, \
+                         (img_size[1] - self.cell_gap) / board_size[1] - self.cell_gap
+
+        self.draw_board()
+        super().__init__(board_size)
+
+    def draw_board(self):
+        """calculate the cell positions, initiate the chips dict, and draw the board"""
+        x_p = [x * (self.cell_size[0] + self.cell_gap) + self.cell_gap for x in range(0, self.board_size[0])]
+        y_p = [y * (self.cell_size[1] + self.cell_gap) + self.cell_gap for y in range(0, self.board_size[1])]
+        xx, yy = np.meshgrid(x_p, y_p, indexing="ij")
+
+        self.x_grid = xx
+        self.y_grid = yy
+
+        # create the rects for the columns
+        for column in range(0, self.board_size[0]):
+            column_size = self.cell_size[0] + self.cell_gap, self.rect.bottom
+            column_topleft = (self.cell_size[0] + self.cell_gap) * column + self.cell_gap / 2, 0
+
+            column_rect = pygame.Rect(*column_topleft, *column_size)
+
+            self.column_rects[column] = column_rect
+
+        # draw the board
+        self.static_board.fill(self.colour)
+        self.static_board.set_colorkey((0, 0, 0))  # make the cells in the board transparent
+
+        for x in range(0, self.board_size[0]):
+            for y in range(0, self.board_size[1]):
+                cell_template = pygame.Surface((101, 101)).convert()
+                cell_template.fill(self.colour)
+
+                pygame.draw.circle(cell_template, (0, 0, 0), cell_template.get_rect().center, 50)
+                cell_template = pygame.transform.scale(cell_template, self.cell_size)
+
+                self.static_board.blit(cell_template, self.get_cell_pos(x, y))
+
+        self.image = self.static_board.copy()
+
+    def get_cell_pos(self, x, y):
+        if 0 <= x < self.board_size[0] and 0 <= y < self.board_size[1]:
+            return self.x_grid[x, y], self.y_grid[x, y]
+        else:
+            raise BoardException(f"CELL POSITION ({x}, {y}) OUT OF BOUNDS")
+
+    def get_column_height(self, column_num):
+        """return the position on top of the highest chip/bottom in the column"""
+        return self.board_size[1] - len(self.chips) - 1
+
+    def place_chip(self, column_num, colour):
+        if len(self.chips[column_num]) < self.board_size[1]:  # if column not full
+            chip_board_pos = column_num, self.get_column_height(column_num)
+            chip_position = self.get_cell_pos(*chip_board_pos)
+
+            start_position = pygame.Vector2(self.get_cell_pos(column_num, 0)) + (0, -self.cell_size[1])
+            new_chip = Chip(self.cell_size, colour, chip_board_pos, chip_position, start_position)
+
+            self.add_chip_to_set(new_chip, column_num)
+            self.check_x_consecutive_chips(chip_board_pos, colour, self.num_in_a_row)
+
 
 
 if __name__ == '__main__':
