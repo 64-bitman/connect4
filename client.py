@@ -13,7 +13,7 @@ COLUMNS, ROWS = 7, 6  # X, Y
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SCALED)
 clock = pygame.time.Clock()
 
-board = sprites.Board(BOARD_IMG_SIZE, (COLUMNS, ROWS), (0, SCREEN_HEIGHT - BOARD_IMG_SIZE[1]), SCREEN_SIZE)
+board = sprites.VisibleBoard(BOARD_IMG_SIZE, (COLUMNS, ROWS), (0, SCREEN_HEIGHT - BOARD_IMG_SIZE[1]), SCREEN_SIZE)
 
 current_colour = "red"
 
@@ -37,4 +37,4 @@ while running:
 
     pygame.display.flip()
     clock.tick()
-    # print(clock.get_fps())
+    print(clock.get_fps())
