@@ -17,3 +17,4 @@ if __name__ == '__main__':
     board.add_chip(sprites.Chip("red", (1, 2)), 3)
 
     print(board.chips)
+    print(board.check_x_consecutive_chips(()))

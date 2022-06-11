@@ -20,9 +20,12 @@ class Board:
 
     def initiate_board(self):
         """add column items (sets) to the chips dict"""
-        # add column items (sets) to the chips dict
         for column in range(0, self.board_size[0]):
             self.chips[column] = set()
+
+    def get_column_height(self, column_num):
+        """return the position on top of the highest chip/bottom in the column"""
+        return self.board_size[1] - len(self.chips[column_num]) - 1
 
     def add_chip(self, chip, column_num: int):
         self.chips[column_num].add(chip)
@@ -65,7 +68,8 @@ class Board:
 
             if found >= count:
                 self.game_won = {"won": True, "colour": colour, "chips": winning_chips}
-                break
+                return True, self.game_won
+        return False
 
 
 class Chip:
@@ -107,7 +111,7 @@ class VisibleBoard(Board, pygame.sprite.Sprite):
         self.draw_board()
 
     def draw_board(self):
-        """calculate the cell positions, initiate the chips dict, and draw the board"""
+        """calculate the cell positions, initiate the column_rects dict, and draw the board"""
         x_p = [x * (self.cell_size[0] + self.cell_gap) + self.cell_gap for x in range(0, self.board_size[0])]
         y_p = [y * (self.cell_size[1] + self.cell_gap) + self.cell_gap for y in range(0, self.board_size[1])]
         xx, yy = np.meshgrid(x_p, y_p, indexing="ij")
@@ -181,10 +185,6 @@ class VisibleBoard(Board, pygame.sprite.Sprite):
             return self.x_grid[x, y], self.y_grid[x, y]
         else:
             raise BoardException(f"CELL POSITION ({x}, {y}) OUT OF BOUNDS")
-
-    def get_column_height(self, column_num):
-        """return the position on top of the highest chip/bottom in the column"""
-        return self.board_size[1] - len(self.chips[column_num]) - 1
 
     def place_chip(self, column_num, colour):
         if len(self.chips[column_num]) < self.board_size[1]:  # if column not full
