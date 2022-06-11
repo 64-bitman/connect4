@@ -24,7 +24,7 @@ class Board:
         for column in range(0, self.board_size[0]):
             self.chips[column] = set()
 
-    def add_chip(self, chip: set, column_num: int):
+    def add_chip(self, chip, column_num: int):
         self.chips[column_num].add(chip)
 
     def check_x_consecutive_chips(self, board_pos, colour, count=4):
@@ -83,6 +83,7 @@ class Chip:
 
 
 class VisibleBoard(Board, pygame.sprite.Sprite):
+    """Inherits from Board class and makes it compatible to be displayed on pygame"""
     def __init__(self, img_size, board_size, topleft, screen_size):
         super().__init__(board_size)
 
@@ -198,6 +199,7 @@ class VisibleBoard(Board, pygame.sprite.Sprite):
 
 
 class VisibleChip(Chip, pygame.sprite.Sprite):
+    """Inherits from Chip class and makes it compatible to be displayed on pygame"""
     def __init__(self, size, colour, col_row, intended_pos, topleft=(0, 0)):
         super().__init__(colour, col_row)
 
