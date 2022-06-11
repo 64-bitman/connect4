@@ -37,4 +37,3 @@ while running:
 
     pygame.display.flip()
     clock.tick()
-    print(clock.get_fps())

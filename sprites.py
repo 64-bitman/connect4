@@ -24,7 +24,7 @@ class Board:
         for column in range(0, self.board_size[0]):
             self.chips[column] = set()
 
-    def add_chip_to_set(self, chip: set, column_num: int):
+    def add_chip(self, chip: set, column_num: int):
         self.chips[column_num].add(chip)
 
     def check_x_consecutive_chips(self, board_pos, colour, count=4):
@@ -84,8 +84,7 @@ class Chip:
 
 class VisibleBoard(Board, pygame.sprite.Sprite):
     def __init__(self, img_size, board_size, topleft, screen_size):
-        Board.__init__(self, board_size)
-        pygame.sprite.Sprite.__init__(self)
+        super().__init__(board_size)
 
         self.static_board = pygame.Surface(img_size).convert()  # to be drawn over `self.static_image`
         self.static_image = self.static_board.copy().convert_alpha()  # blank surface to blit in chips
@@ -194,14 +193,13 @@ class VisibleBoard(Board, pygame.sprite.Sprite):
             start_position = pygame.Vector2(self.get_cell_pos(column_num, 0)) + (0, -self.cell_size[1])
             new_chip = VisibleChip(self.cell_size, colour, chip_board_pos, chip_position, start_position)
 
-            self.add_chip_to_set(new_chip, column_num)
+            self.add_chip(new_chip, column_num)
             self.check_x_consecutive_chips(chip_board_pos, colour, self.num_in_a_row)
 
 
 class VisibleChip(Chip, pygame.sprite.Sprite):
     def __init__(self, size, colour, col_row, intended_pos, topleft=(0, 0)):
-        Chip.__init__(self, colour, col_row)
-        pygame.sprite.Sprite.__init__(self)
+        super().__init__(colour, col_row)
 
         self.image = pygame.transform.smoothscale(pygame.image.load("images/red_chip.png"), size).convert_alpha()
 
