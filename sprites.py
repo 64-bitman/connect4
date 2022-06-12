@@ -1,5 +1,6 @@
 import pygame
 import numpy as np
+import socket
 from linetimer import CodeTimer
 
 
@@ -27,12 +28,12 @@ class Board:
         """return the position on top of the highest chip/bottom in the column"""
         return self.board_size[1] - len(self.chips[column_num]) - 1
 
-    def add_chip(self, chip, column_num: int):
-        self.chips[column_num].add(chip)
+    def add_chip(self, chip):
+        self.chips[chip.board_pos[0]].add(chip)
 
-    def check_x_consecutive_chips(self, board_pos, colour, count=4):
+    def check_x_consecutive_chips(self, target_chip, count=4):
         """check if the chip makes x in a row"""
-        board_pos = pygame.Vector2(board_pos)
+        board_pos = pygame.Vector2(target_chip.board_pos)
         directions = (pygame.Vector2(-1, -1), pygame.Vector2(0, -1), pygame.Vector2(1, -1), pygame.Vector2(1, 0))
         winning_lines = {}
 
@@ -50,7 +51,7 @@ class Board:
             # change all the positions that are occupied to the chip that occupies it
             for column_num, chip_set in self.chips.items():
                 for chip in chip_set:
-                    if chip.colour == colour and chip.board_pos in positions:
+                    if chip.colour == target_chip.colour and chip.board_pos in positions:
                         positions.remove(chip.board_pos)
                         positions.add(chip)
 
@@ -67,7 +68,7 @@ class Board:
                     break
 
             if found >= count:
-                self.game_won = {"won": True, "colour": colour, "chips": winning_chips}
+                self.game_won = {"won": True, "colour": target_chip.colour, "chips": winning_chips}
                 return True, self.game_won
         return False
 
@@ -84,6 +85,12 @@ class Chip:
 
     def __getitem__(self, index):
         return self.board_pos[index]
+
+    def __hash__(self):
+        return hash(self.board_pos)
+
+    def __eq__(self, other):
+        return isinstance(other, Chip)
 
 
 class VisibleBoard(Board, pygame.sprite.Sprite):
@@ -194,8 +201,8 @@ class VisibleBoard(Board, pygame.sprite.Sprite):
             start_position = pygame.Vector2(self.get_cell_pos(column_num, 0)) + (0, -self.cell_size[1])
             new_chip = VisibleChip(self.cell_size, colour, chip_board_pos, chip_position, start_position)
 
-            self.add_chip(new_chip, column_num)
-            self.check_x_consecutive_chips(chip_board_pos, colour, self.num_in_a_row)
+            self.add_chip(new_chip)
+            self.check_x_consecutive_chips(new_chip, self.num_in_a_row)
 
 
 class VisibleChip(Chip, pygame.sprite.Sprite):
@@ -227,4 +234,12 @@ class VisibleChip(Chip, pygame.sprite.Sprite):
 
 
 if __name__ == '__main__':
-    ...
+    HOST = socket.gethostbyname(socket.gethostname())
+    PORT = 4000
+
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    client.connect((HOST, PORT))
+
+    print(client.recv(100).decode("utf-8"))
+    print("hey")
