@@ -1,6 +1,6 @@
 import pygame
 import numpy as np
-import socket
+import json
 from linetimer import CodeTimer
 
 
@@ -30,6 +30,14 @@ class Board:
 
     def add_chip(self, chip):
         self.chips[chip.board_pos[0]].add(chip)
+
+    def add_chip_to_column(self, column_num, colour):
+        chip_board_pos = column_num, self.get_column_height(column_num)
+        new_chip = Chip(colour, chip_board_pos)
+
+        self.add_chip(new_chip)
+        self.check_x_consecutive_chips(new_chip)
+        return new_chip
 
     def check_x_consecutive_chips(self, target_chip, count=4):
         """check if the chip makes x in a row"""
@@ -233,13 +241,22 @@ class VisibleChip(Chip, pygame.sprite.Sprite):
                 self.rect.top = self.intended_pos[1]
 
 
+class SelectionScreen(pygame.sprite.Sprite):
+    def __init__(self, screen_size):
+        super().__init__()
+        self.image = pygame.Surface(screen_size).convert()
+        self.rect = self.image.get_rect()
+
+        self.image.set_colorkey((0, 0, 0))
+        self.waiting_games = []
+
+    def update(self, json_data):
+        self.waiting_games.clear()
+        self.image.fill((0, 0, 0))
+
+        for game_json in json_data:
+            self.waiting_games.append(json.loads(game_json))
+
+
 if __name__ == '__main__':
-    HOST = socket.gethostbyname(socket.gethostname())
-    PORT = 4000
-
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    client.connect((HOST, PORT))
-
-    print(client.recv(100).decode("utf-8"))
-    print("hey")
+    ...
